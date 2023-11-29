@@ -1,0 +1,22 @@
+# OpenVPN system container
+
+[Distribution]
+Distribution=debian
+Release=bookworm
+
+[Output]
+Format=tar
+Output=openvpn.tar.xz
+Bootable=no
+
+[Validation]
+CheckSum=true
+
+[Packages]
+WithNetwork=true
+Packages=easy-rsa  # Simple shell based CA utility
+         iproute2
+         nano
+         openvpn
+         procps    # /proc file system utilities
+         unattended-upgrades  # automatic installation of security upgrades

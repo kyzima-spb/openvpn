@@ -1,0 +1,4 @@
+image/mkosi.cache/*
+image/mkosi.output/*
+
+!.gitkeep

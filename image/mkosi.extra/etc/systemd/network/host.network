@@ -1,0 +1,5 @@
+[Math]
+Name=host*
+
+[Network]
+DHCP=yes
