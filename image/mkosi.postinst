@@ -3,3 +3,6 @@ set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
+systemctl enable systemd-networkd \
+                 openvpn-generate-keys \
+                 openvpn-server@server

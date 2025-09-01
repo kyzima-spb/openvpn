@@ -1,5 +1,3 @@
-# OpenVPN system container
-
 [Distribution]
 Distribution=debian
 Release=bookworm
