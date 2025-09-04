@@ -6,7 +6,7 @@ Wants=network-online.target
 
 [Service]
 WorkingDirectory=/etc/easy-rsa/
-ExecStart=/etc/easy-rsa/generate-keys.sh
+ExecStart=/usr/local/bin/generate-server-keys.sh
 
 [Install]
 WantedBy=multi-user.target

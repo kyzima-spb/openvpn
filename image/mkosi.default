@@ -12,8 +12,12 @@ CheckSum=true
 
 [Packages]
 WithNetwork=true
-Packages=easy-rsa  # Simple shell based CA utility
+Packages=curl
+         easy-rsa
+         gettext-base
          iproute2
+         less
+         nftables
          nano
          openvpn
          procps    # /proc file system utilities

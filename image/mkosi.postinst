@@ -3,6 +3,14 @@ set -e
 
 export DEBIAN_FRONTEND=noninteractive
 
+
+# Копируем утилиту Easy-RSA
+cp -r /usr/share/easy-rsa /etc/
+chmod 700 /etc/easy-rsa
+
+# Создаем директория для хранения пользовательских конфигураций
+mkdir -p /etc/openvpn/server/ccd
+
 systemctl enable systemd-networkd \
                  openvpn-generate-keys \
                  openvpn-server@server
