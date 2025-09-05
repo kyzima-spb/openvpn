@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
+easyrsa_dir=/etc/easy-rsa
+server_keys_dir=/etc/openvpn/server/keys
+
 
 generate_client() {
-  declare -n kwargs=$1
-  local name="${kwargs[name]}"
-  local rewrite="${kwargs[rewrite]:-false}"
+  local name="$1"
+  declare -n kwargs=$2
+  local revoke="${kwargs[revoke]:-false}"
 
-  if $rewrite
-  then
-    rm -f ./pki/reqs/client.req ./pki/issued/client.crt ./pki/private/client.key
+  if $revoke; then
+    revoke_client "$name"
   fi
 
-  if ! EASYRSA_BATCH=1 ./easyrsa build-client-full "$name" nopass >/dev/null 2> >(sed -n '/^Easy-RSA error:/,//p' >&2)
-  then
-    exit 1
-  fi
+  echo "Generate certificate and key for client: $name"
+  run_easyrsa build-client-full "$name" nopass
 }
 
 
@@ -23,18 +23,40 @@ get_remote_ip() {
     local services=(2ip.ru icanhazip.com ifconfig.me api.ipify.org)
 
     for url in "${services[@]}"; do
-        curl -sf -4 --connect-timeout 10 "$url" && break
+      curl -sf -4 --connect-timeout 10 "$url" && break
     done
 }
 
 
+revoke_client() {
+  local name="$1"
+
+  echo "Revocation of a previously issued certificate for a client: $name"
+  run_easyrsa revoke "$name"
+
+  echo 'Generating a CRL file (Certificate Revocation List)'
+  run_easyrsa gen-crl
+
+  echo "Copying the CRL file to the OpenVPN server directory: $server_keys_dir"
+  cp ./pki/crl.pem "$server_keys_dir"/
+
+  echo 'Restarting OpenVPN server'
+  systemctl restart openvpn-server@server
+}
+
+
+run_easyrsa() {
+  EASYRSA_BATCH=1 ./easyrsa "$@" > /dev/null 2> >(sed -n '/^Easy-RSA error:/,//p' >&2)
+}
+
+
 show_config() {
-  declare -n kwargs=$1
-  local name="${kwargs[name]}"
+  local name="$1"
+  declare -n kwargs=$2
 
   if [[ ! -f "./pki/issued/${name}.crt" ]] || [[ ! -f "./pki/private/${name}.key" ]]
   then
-    echo >&2 "Invalid argument value: -n or --name - client not found."
+    echo >&2 "Invalid argument value: client with '$name' not found."
     exit 1
   fi
 
@@ -61,23 +83,42 @@ usage() {
 
 			Adds a new OpenVPN client
 
-			Usage: $(basename "$0") $1 --name NAME [OPTIONS]"
+			Usage: $(basename "$0") $1 NAME [OPTIONS]"
+
+			Positional:
+			  NAME STRING           CN (name) of the client
+
+			Options:
+			  -f --revoke BOOL      Recreate the client, overwriting the old private key and certificate
+
+			ENDOFUSAGE
+			;;
+		revoke)
+			cat 1>&2 <<-ENDOFUSAGE
+
+			Revokes a previously issued certificate to a client
+
+			Usage: $(basename "$0") $1 NAME [OPTIONS]"
+
+			Positional:
+			  NAME STRING           CN (name) of the client
 
 			Options:
 			  -n --name STRING      CN (name) of the client
-			  -f --rewrite BOOL     Recreate the client, overwriting the old private key and certificate
 
 			ENDOFUSAGE
 			;;
 		show)
-		  cat 1>&2 <<-ENDOFUSAGE
+			cat 1>&2 <<-ENDOFUSAGE
 
 			Outputs to STDOUT the OVPN configuration file for the client with the given CN
 
-			Usage: $(basename "$0") $1 --name NAME [OPTIONS]"
+			Usage: $(basename "$0") $1 NAME [OPTIONS]"
+
+			Positional:
+			  NAME STRING           CN (name) of the client
 
 			Options:
-			  -n --name STRING      CN (name) of the client
 			  -r --ip
 			     --remote STRING    OpenVPN server host, default - external IP address
 			  -p --port STRING      OpenVPN server port, default - 1194
@@ -90,10 +131,11 @@ usage() {
 
 			Utility for working with keys and certificates
 
-			Usage: $(basename "$0") COMMAND [OPTIONS]
+			Usage: $(basename "$0") COMMAND NAME [OPTIONS]
 
 			Commands:
 			  generate  Create a new client
+			  revoke    Revokes the client certificate
 			  show      Show ovpn file for client
 
 			ENDOFUSAGE
@@ -112,19 +154,18 @@ shift
 
 case "$cmd" in
   generate)
-    declare -A optionsMap=(
-      [-n]="name"
-      [--name]="name"
-    )
+    declare -A optionsMap=()
     declare -A flagsMap=(
-      [-f]="rewrite"
-      [--rewrite]="rewrite"
+      [-f]="revoke"
+      [--revoke]="revoke"
     )
+    ;;
+  revoke)
+    declare -A optionsMap=()
+    declare -A flagsMap=()
     ;;
   show)
     declare -A optionsMap=(
-      [-n]="name"
-      [--name]="name"
       [-r]="remote"
       [--ip]="remote"
       [--remote]="remote"
@@ -141,7 +182,8 @@ case "$cmd" in
     ;;
 esac
 
-declare -A arguments=()
+declare cli_positional=()
+declare -A cli_options=()
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -149,12 +191,12 @@ while [[ "$#" -gt 0 ]]; do
       usage "$cmd"
       exit 0
       ;;
-    *)
+    --*|-*)
       if [[ -v "optionsMap[$1]" ]]; then
-        arguments["${optionsMap[$1]}"]="$2"
+        cli_options["${optionsMap[$1]}"]="$2"
         shift 2
       elif [[ -v "flagsMap[$1]" ]]; then
-        arguments["${flagsMap[$1]}"]=true
+        cli_options["${flagsMap[$1]}"]=true
         shift 1
       else
         echo >&2 "Error: Unknown option $1"
@@ -162,18 +204,25 @@ while [[ "$#" -gt 0 ]]; do
         exit 1
       fi
       ;;
+    *)
+      cli_positional+=("$1")
+      shift
+      ;;
   esac
 done
 
-if [[ -z "${arguments[name]}" ]]; then
-    echo >&2 "Required argument: -n or --name"
+name="${cli_positional[0]}"
+
+if [[ -z "$name" ]]; then
+    echo >&2 "Required positional argument: name"
     usage "$cmd"
     exit 1
 fi
 
-cd /etc/easy-rsa || exit 1
+cd "$easyrsa_dir" || exit 1
 
 case "$cmd" in
-  generate) generate_client arguments ;;
-  show) show_config arguments ;;
+  generate) generate_client "$name" cli_options ;;
+  revoke) revoke_client "$name" cli_options ;;
+  show) show_config "$name" cli_options ;;
 esac
