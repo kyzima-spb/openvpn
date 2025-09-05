@@ -34,7 +34,7 @@ revoke_client() {
   echo "Revocation of a previously issued certificate for a client: $name"
   run_easyrsa revoke "$name"
 
-  echo 'Generating a CRL file (Certificate Revocation List)'
+  echo 'Generate OpenVPN Revocation Certificate'
   run_easyrsa gen-crl
 
   echo "Copying the CRL file to the OpenVPN server directory: $server_keys_dir"

@@ -1,31 +1,36 @@
 #!/usr/bin/env bash
 set -e
 
+easyrsa_dir=/etc/easy-rsa
+server_keys_dir=/etc/openvpn/server/keys
+
 
 build_pki() {
-    echo 'Инициализация PKI'
-    ./easyrsa init-pki
+    echo 'PKI initialization'
+    run_easyrsa init-pki
 
-    echo 'Генерация сертификата и ключа центра сертификации (CA)'
-    EASYRSA_BATCH=1 EASYRSA_REQ_CN="OpenVPN CA" ./easyrsa build-ca nopass
+    echo 'Generate the Certificate Authority (CA) Certificate and Key'
+    EASYRSA_REQ_CN="OpenVPN CA" run_easyrsa build-ca nopass
 
-    echo 'Генерация ключей Диффи-Хеллмана'
-    EASYRSA_BATCH=1 ./easyrsa gen-dh
+    echo 'Generate Diffie Hellman Parameters'
+    run_easyrsa gen-dh
 
-    echo 'Генерация сертификата и закрытого ключа для сервера OpenVPN'
-    EASYRSA_BATCH=1 ./easyrsa build-server-full server nopass nodatetime
+    echo 'Generate OpenVPN Server Certificate and Key'
+    run_easyrsa build-server-full server nopass
 
-    echo 'Генерация ключа кода аутентификации сообщений на основе хэша (HMAC)'
-    # для предотвращения DoS-атак и переполнения портов UDP
+    echo 'Generate Hash-based Message Authentication Code (HMAC) key'
+    # to prevent DoS attacks and UDP port flooding
     openvpn --genkey secret ./pki/ta.key
 
-    echo 'Генерация сертификата отзыва'
-    EASYRSA_BATCH=1 ./easyrsa gen-crl
+    echo 'Generate OpenVPN Revocation Certificate'
+    run_easyrsa gen-crl
 }
 
 
-easyrsa_dir=/etc/easy-rsa
-server_keys_dir=/etc/openvpn/server/keys
+run_easyrsa() {
+  EASYRSA_BATCH=1 ./easyrsa "$@" > /dev/null 2> >(sed -n '/^Easy-RSA error:/,//p' >&2)
+}
+
 
 cd "$easyrsa_dir" || exit 1
 
@@ -39,11 +44,10 @@ fi
 if [[ ! -d "$server_keys_dir" ]] || \
    [[ -z "$(find "$server_keys_dir" -mindepth 1 -print -quit)" ]]
 then
-    echo -n 'Copying certificates and keys to the OpenVPN server directory...'
+    echo 'Copy Server Certificates and Keys to Server Config Directory'
     mkdir -p "$server_keys_dir"
     cp -rp ./pki/{ca.crt,dh.pem,ta.key,crl.pem,issued/server.crt,private/server.key} \
            "$server_keys_dir"
-    echo '[OK]'
 fi
 
 
@@ -51,8 +55,7 @@ if [[ ! -f ./pki/issued/client.crt ]] && \
    [[ ! -f ./pki/private/client.key ]] && \
    [[ ! -f ./pki/reqs/client.req ]]
 then
-    echo -n 'Generate a default client certificate and key...'
-    generate-client-key generate -n client
-    generate-client-key show -n client > /root/client.ovpn
-    echo '[OK]'
+    echo 'Generate OpenVPN Client Certificates and Keys'
+    generate-client-key generate client
+    generate-client-key show client > /root/client.ovpn
 fi
