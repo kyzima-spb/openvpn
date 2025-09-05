@@ -39,10 +39,11 @@ fi
 if [[ ! -d "$server_keys_dir" ]] || \
    [[ -z "$(find "$server_keys_dir" -mindepth 1 -print -quit)" ]]
 then
-    echo 'Копирование сертификатов и ключей в директорию сервера OpenVPN'
+    echo -n 'Copying certificates and keys to the OpenVPN server directory...'
     mkdir -p "$server_keys_dir"
     cp -rp ./pki/{ca.crt,dh.pem,ta.key,crl.pem,issued/server.crt,private/server.key} \
            "$server_keys_dir"
+    echo '[OK]'
 fi
 
 
@@ -50,6 +51,8 @@ if [[ ! -f ./pki/issued/client.crt ]] && \
    [[ ! -f ./pki/private/client.key ]] && \
    [[ ! -f ./pki/reqs/client.req ]]
 then
-    echo 'Генерация клиентского сертификата и ключа по умолчанию'
-    generate-client-key -n client > /root/client.ovpn
+    echo -n 'Generate a default client certificate and key...'
+    generate-client-key generate -n client
+    generate-client-key show -n client > /root/client.ovpn
+    echo '[OK]'
 fi
