@@ -57,5 +57,4 @@ if [[ ! -f ./pki/issued/client.crt ]] && \
 then
     echo 'Generate OpenVPN Client Certificates and Keys'
     generate-client-key generate client
-    generate-client-key show client > /root/client.ovpn
 fi
