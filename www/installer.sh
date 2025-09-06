@@ -33,7 +33,8 @@ backup() {
 	run_command_in_container "$name" tar -cPJO \
 	  /etc/easy-rsa/pki \
 	  /etc/openvpn/server/keys \
-	  /etc/openvpn/server/server.conf
+	  /etc/openvpn/server/server.conf \
+	  /etc/openvpn/server/server-tcp.conf
 }
 
 
@@ -49,20 +50,20 @@ install_requirements() {
 
 	echo -n >&2 'Updating the package index...'
 	apt-get update -qq
-	echo '[OK]'
+	echo >&2 '[OK]'
 
 	if ! command -v machinectl > /dev/null
 	then
 	  echo -n >&2 'Installing the systemd-container package...'
 		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y systemd-container
-		echo '[OK]'
+		echo >&2 '[OK]'
 	fi
 
 	if ! command -v gpg > /dev/null
 	then
 	  echo -n >&2 'Installing the gnupg package...'
 		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y gnupg
-		echo '[OK]'
+		echo >&2 '[OK]'
 	fi
 
 	gpg -k > /dev/null

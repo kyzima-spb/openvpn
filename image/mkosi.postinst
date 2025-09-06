@@ -13,4 +13,4 @@ mkdir -p /etc/openvpn/server/ccd
 
 systemctl enable systemd-networkd \
                  openvpn-generate-keys \
-                 openvpn-server@server
+                 openvpn-server@server openvpn-server@server-tcp
