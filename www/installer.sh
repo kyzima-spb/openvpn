@@ -47,16 +47,22 @@ restore() {
 install_requirements() {
   local public_key="$1"
 
+	echo -n >&2 'Updating the package index...'
 	apt-get update -qq
+	echo '[OK]'
 
 	if ! command -v machinectl > /dev/null
 	then
+	  echo -n >&2 'Installing the systemd-container package...'
 		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y systemd-container
+		echo '[OK]'
 	fi
 
 	if ! command -v gpg > /dev/null
 	then
+	  echo -n >&2 'Installing the gnupg package...'
 		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y gnupg
+		echo '[OK]'
 	fi
 
 	gpg -k > /dev/null
