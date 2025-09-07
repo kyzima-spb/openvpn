@@ -126,10 +126,13 @@ install() {
 
 	echo >&2 "[OK]"
 
-	machinectl shell -q "$name" /usr/local/bin/generate-client-key show client \
-	                            --remote "${kwargs[remote]}" \
-	                            --port "$port" \
-	                            --proto "${kwargs[proto]}"
+	run_command_in_container "$name" \
+	                         /usr/local/bin/client-util show client \
+	                         --format "${kwargs[format]}" \
+	                         --password "${kwargs[password]}" \
+	                         --port "$port" \
+	                         --proto "${kwargs[proto]}" \
+	                         --remote "${kwargs[remote]}"
 }
 
 
@@ -189,9 +192,12 @@ usage() {
 			Usage: $(basename "$0") $1 [OPTIONS]"
 
 			Options:
+			  --format STRING       OVPN file or zip archive, default - ovpn
+			                        Allowed values: ovpn, zip
 			  -n --name STRING      Container name (used by machinectl and .nspawn config file)
 			  --url --image STRING  Path to a rootfs tarball or URL supported by machinectl pull-tar
 			  --ip --remote STRING  Server host, default - external IP address
+			  --password STRING     Password for archive, default - not set
 			  -p --port STRING      Server port, default - random free
 			  --proto STRING        Server connection protocol
 			  --public-key STRING   The public GPG that the image is signed with
@@ -271,10 +277,12 @@ main() {
   case "$cmd" in
     install)
       options_map+=(
+        [--format]="format"
         [--url]="image"
         [--image]="image"
         [--ip]="remote"
         [--remote]="remote"
+        [--password]="password"
         [-p]="port"
         [--port]="port"
         [--proto]="proto"

@@ -7,8 +7,7 @@ server_keys_dir=/etc/openvpn/server/keys
 
 generate_client() {
   local name="$1"
-  declare -n kwargs=$2
-  local revoke="${kwargs[revoke]:-false}"
+  local revoke="${2:-false}"
 
   if $revoke; then
     revoke_client "$name"
@@ -51,6 +50,7 @@ run_easyrsa() {
 
 
 show_config() {
+  # Arguments: name, format, remote, password, port, proto
   local name="$1"
   declare -n kwargs=$2
   local output_format="${kwargs[format]:-ovpn}"
@@ -186,60 +186,70 @@ usage() {
 }
 
 
-if [[ "$#" -lt 1 ]]; then
+case "$1" in
+  '')
     usage
     exit 1
-fi
+    ;;
+  -h|--help)
+    usage
+    exit
+    ;;
+  -v|--version)
+    echo 'Not implemented :)'
+    exit
+    ;;
+  generate|revoke|show)
+    cmd="$1"
+    shift
+    ;;
+  *)
+    echo >&2 "Unknown command: $1"
+    usage
+    exit 1
+    ;;
+esac
 
-cmd="$1"
-shift
+declare -A options_map=()
+declare -A flags_map=()
 
 case "$cmd" in
   generate)
-    declare -A optionsMap=()
-    declare -A flagsMap=(
+    flags_map+=(
       [-f]="revoke"
       [--revoke]="revoke"
     )
     ;;
-  revoke)
-    declare -A optionsMap=()
-    declare -A flagsMap=()
-    ;;
   show)
-    declare -A optionsMap=(
+    options_map+=(
+      [--format]="format"
       [-r]="remote"
       [--ip]="remote"
       [--remote]="remote"
+      [--password]="password"
       [-p]="port"
       [--port]="port"
       [--proto]="proto"
-      [--format]="format"
     )
-    declare -A flagsMap=()
-    ;;
-  *)
-    echo >&2 "Unknown command: $cmd"
-    usage
-    exit 1
     ;;
 esac
 
 declare cli_positional=()
 declare -A cli_options=()
 
-while [[ "$#" -gt 0 ]]; do
+while [[ "$#" -gt 0 ]]
+do
   case "$1" in
     -h|--help)
       usage "$cmd"
       exit 0
       ;;
     --*|-*)
-      if [[ -v "optionsMap[$1]" ]]; then
-        cli_options["${optionsMap[$1]}"]="$2"
+      if [[ -v "options_map[$1]" ]]; then
+        cli_options["${options_map[$1]}"]="$2"
         shift 2
-      elif [[ -v "flagsMap[$1]" ]]; then
-        cli_options["${flagsMap[$1]}"]=true
+      elif [[ -v "flags_map[$1]" ]]; then
+        cli_options["${flags_map[$1]}"]=true
         shift 1
       else
         echo >&2 "Error: Unknown option $1"
@@ -265,7 +275,13 @@ fi
 cd "$easyrsa_dir" || exit 1
 
 case "$cmd" in
-  generate) generate_client "$name" cli_options ;;
-  revoke) revoke_client "$name" cli_options ;;
-  show) show_config "$name" cli_options ;;
+  generate)
+    generate_client "$name" "${cli_options[revoke]}"
+    ;;
+  revoke)
+    revoke_client "$name"
+    ;;
+  show)
+    show_config "$name" cli_options
+    ;;
 esac

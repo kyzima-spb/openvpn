@@ -1,6 +1,7 @@
 [Distribution]
 Distribution=debian
-Release=bookworm
+#Release=bookworm
+Release=trixie
 
 [Output]
 Format=tar
@@ -21,4 +22,5 @@ Packages=curl
          nano
          openvpn
          procps    # /proc file system utilities
+         zip
          unattended-upgrades  # automatic installation of security upgrades
