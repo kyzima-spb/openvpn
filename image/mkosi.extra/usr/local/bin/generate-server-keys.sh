@@ -56,5 +56,5 @@ if [[ ! -f ./pki/issued/client.crt ]] && \
    [[ ! -f ./pki/reqs/client.req ]]
 then
     echo 'Generate OpenVPN Client Certificates and Keys'
-    generate-client-key generate client
+    client-util generate client
 fi

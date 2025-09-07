@@ -53,6 +53,8 @@ run_easyrsa() {
 show_config() {
   local name="$1"
   declare -n kwargs=$2
+  local output_format="${kwargs[format]:-ovpn}"
+  local password="${kwargs[password]}"
 
   if [[ ! -f "./pki/issued/${name}.crt" ]] || [[ ! -f "./pki/private/${name}.key" ]]
   then
@@ -63,7 +65,13 @@ show_config() {
   local CA_CERT CLIENT_CERT CLIENT_KEY
   CA_CERT="$(sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' ./pki/ca.crt)"
   CLIENT_CERT="$(sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' "./pki/issued/${name}.crt")"
-  CLIENT_KEY="$(sed -n '/BEGIN PRIVATE KEY/,/END PRIVATE KEY/p' "./pki/private/${name}.key")"
+
+  if [[ -f "./pki/private/${name}.key" ]]
+  then
+    CLIENT_KEY="$(sed -n '/BEGIN PRIVATE KEY/,/END PRIVATE KEY/p' "./pki/private/${name}.key")"
+  else
+    CLIENT_KEY='<!-- YOUR PRIVATE KEY -->'
+  fi
 
   export PROTO="${kwargs[proto]:-udp}"
   export REMOTE="${kwargs[remote]:-$(get_remote_ip)}"
@@ -72,7 +80,37 @@ show_config() {
   export CLIENT_CERT
   export CLIENT_KEY
 
-  envsubst < "/etc/openvpn/templates/client-${PROTO}.tmpl"
+  case "$output_format" in
+    ovpn)
+      envsubst < "/etc/openvpn/templates/client-${PROTO}.tmpl"
+      ;;
+    zip)
+      local tmpdir
+      tmpdir="$(mktemp -d)"
+      # shellcheck disable=SC2064
+      trap "rm -r '$tmpdir'" EXIT
+
+      envsubst < "/etc/openvpn/templates/client-${PROTO}.tmpl" > "$tmpdir/client.ovpn"
+
+      declare zip_args=(
+        -qj
+        -
+        ./pki/ca.crt
+        ./pki/ta.key
+        "./pki/issued/${name}.crt"
+        "./pki/private/${name}.key"
+        "$tmpdir/client.ovpn"
+      )
+
+      [[ -n "$password" ]] && zip_args+=(-P "$password")
+
+      zip "${zip_args[@]}"
+      ;;
+    *)
+      echo >&2 "Invalid argument value: unknown format '$format'."
+      exit 1
+      ;;
+  esac
 }
 
 
@@ -104,7 +142,7 @@ usage() {
 			  NAME STRING           CN (name) of the client
 
 			Options:
-			  -n --name STRING      CN (name) of the client
+
 
 			ENDOFUSAGE
 			;;
@@ -119,10 +157,14 @@ usage() {
 			  NAME STRING           CN (name) of the client
 
 			Options:
+			  --format STRING       OVPN file or zip archive, default - ovpn
+			                        Allowed values: ovpn, zip
 			  -r --ip
 			     --remote STRING    OpenVPN server host, default - external IP address
+			  --password STRING     Password for archive, default - not set
 			  -p --port STRING      OpenVPN server port, default - 1194
-			  --proto STRING        Server connection protocol (udp or tcp)
+			  --proto STRING        Server connection protocol, default - udp
+			                        Allowed values: udp, tcp
 
 			ENDOFUSAGE
 			;;
@@ -172,6 +214,7 @@ case "$cmd" in
       [-p]="port"
       [--port]="port"
       [--proto]="proto"
+      [--format]="format"
     )
     declare -A flagsMap=()
     ;;
