@@ -9,6 +9,7 @@ OpenVPN systemd-nspawn container
 - [How to Choose the Right VPS?](#how-to-choose-the-right-vps)
   - [Minimum System Requirements for Choosing a VPS](#minimum-system-requirements-for-choosing-a-vps)
   - [What I Used and Can Recommend](#what-i-used-and-can-recommend)
+- [Commands for Working with Clients](#commands-for-working-with-clients)
 
 ## Introduction
 
@@ -143,3 +144,58 @@ everything else plays only a minor role and won’t significantly affect your se
   * **Account with a small balance was deleted without warning**
   * Tested on 21.02.2024 in USA, London, and Netherlands locations
   * Hourly billing
+
+## Commands for Working with Clients
+
+Client management for OpenVPN inside the container is handled by the `client-util` script.
+For more details, see the help documentation. Here are a few examples for common use cases.
+
+Commands can be executed inside the container:
+
+```shell
+# To login the container, use the command:
+machinectl shell <CONTAINER_NAME>
+# Inside the container, view the help for the command:
+client-util -h
+```
+
+Or from the host:
+
+```shell
+systemd-run -q --wait --pipe -M openvpn client-util -h
+```
+
+To add a new client named `phone`, run the command:
+
+```shell
+systemd-run -q --wait --pipe -M openvpn client-util generate phone
+```
+
+To recreate the certificate and key for an existing client, use the `--revoke` argument.
+This will revoke the previously issued certificate and key:
+
+```shell
+systemd-run -q --wait --pipe -M openvpn client-util generate phone --revoke
+```
+
+Deleting a client is not supported, but you can revoke the certificate and key issued to them.
+To do this, run the command:
+
+```shell
+systemd-run -q --wait --pipe -M openvpn client-util revoke phone
+```
+
+To generate a configuration file for the OpenVPN Connect application, run the command:
+
+```shell
+systemd-run -q --wait --pipe -M openvpn client-util show phone > phone.ovpn
+```
+
+If the port was not explicitly specified during installation, a random available port will be used.
+Inside the container, this port is unknown, so when generating OVPN files,
+you need to explicitly specify the port:
+
+```shell
+VPN_PORT="$(grep '^Port=' /etc/systemd/nspawn/openvpn.nspawn | awk -F: '{print $2}' | head -1)"
+systemd-run -q --wait --pipe -M openvpn client-util show phone -p "$VPN_PORT" > phone.ovpn
+```
