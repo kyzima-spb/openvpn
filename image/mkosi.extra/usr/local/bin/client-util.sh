@@ -80,6 +80,11 @@ show_config() {
   export CLIENT_CERT
   export CLIENT_KEY
 
+  if [[ -n "$password" ]]
+  then
+    output_format='zip'
+  fi
+
   case "$output_format" in
     ovpn)
       envsubst < "/etc/openvpn/templates/client-${PROTO}.tmpl"
