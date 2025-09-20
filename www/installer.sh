@@ -80,7 +80,7 @@ install_requirements() {
 install() {
   declare -n kwargs=$1
 	local name="${kwargs[name]}"
-	local image="${kwargs[image]:-https://kyzima-spb.github.io/openvpn/images/trixie/rootfs.tar.xz}"
+	local image="${kwargs[image]:-https://github.com/kyzima-spb/openvpn/releases/download/v1.0/openvpn.tar.xz}"
 	local port="${kwargs[port]:-$(get_free_port)}"
 	local public_key="${kwargs[public_key]:-0xA2AFF7EB363E6C8DD27655AD62CD962F89DDC0CD}"
 
