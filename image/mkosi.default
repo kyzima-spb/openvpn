@@ -5,7 +5,7 @@ Release=trixie
 
 [Output]
 Format=tar
-Output=rootfs.tar.xz
+Output=openvpn.tar.xz
 Bootable=no
 
 [Validation]

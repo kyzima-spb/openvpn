@@ -1,0 +1,40 @@
+name: Build and Publish image on release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v5
+      -
+        name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap \
+            python3 \
+            systemd-container
+          sudo pip3 install https://github.com/systemd/mkosi/archive/refs/tags/v14.zip
+      -
+        name: Import GPG key
+        run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+      -
+        name: Build Image
+        working-directory: ./image
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+        run: |
+          sudo -E mkosi build .
+          gh release upload ${{github.event.release.tag_name}} \
+            ./mkosi.output/debian~trixie/openvpn.tar.xz \
+            ./mkosi.output/debian~trixie/openvpn.tar.xz.manifest \
+            ./mkosi.output/debian~trixie/SHA256SUMS \
+            ./mkosi.output/debian~trixie/SHA256SUMS.gpg
