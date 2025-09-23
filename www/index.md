@@ -125,20 +125,31 @@ everything else plays only a minor role and won’t significantly affect your se
   * Usage period: 17.04.2022 - 17.10.2023
   * Very good and stable hosting, support responds quickly
     It was the optimal option in terms of price/quality until the prices increased
-  * Available locations: USA, Germany, Netherlands, Finland and Russia
+  * Available locations: Russia, USA, Germany, Netherlands and Finland
+
+* [WebHOST1](https://webhost1.ru/?r=139105)
+  * Usage period: 17.03.2022 - 17.04.2022
+  * Tested the location in Chisinau, ping was good, but there were some freezes
+    Previously, I had rented locations in Moldova from other hosting providers,
+    and this is a common occurrence, so I don’t consider it a drawback
+  * There is a trial period during which you can request a refund - I got my money back without any issues
+  * A large number of locations at a good price, but servers are often unavailable.
+    They do appear from time to time, so you need to keep monitoring =)
+  * Available locations: Russia, Moldova, Israel, USA, Netherlands, Hong Kong, France, Armenia, Türkiye and Germany
+  * You can pay with a 3-, 6- or 12-month discount
 
 * [HOSTING RUSSIA](https://hosting-russia.ru/?p=37512)
   * Usage period: 17.10.2023 - present
   * Very good and stable hosting, support responds relatively quickly,
     but there was a case when it was simply unavailable during a DDoS attack
-  * Available locations: Germany, Netherlands and Russia
+  * Available locations: Russia, Germany and Netherlands
   * You can pay with a 6- or 12-month discount
 
 * [TimeWeb](https://timeweb.cloud/?i=127787)
   * Usage period: 20.06.2025 - present
   * Very good and stable hosting, support responds quickly
   * You can pay with a 3-, 6- or 12-month discount
-  * Available locations: Germany, Netherlands, Kazakhstan and Russia
+  * Available locations: Russia, Germany, Netherlands and Kazakhstan
 
 * [аéза]
   * **Account with a small balance was deleted without warning**
