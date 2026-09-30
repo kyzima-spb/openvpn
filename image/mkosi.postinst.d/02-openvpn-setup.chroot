@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo >&2 "=> Create a directory to store user configurations"
+mkdir -p /etc/openvpn/server/ccd
+
+echo >&2 "=> Enable services and generate default keys"
+systemctl enable systemd-networkd \
+                 openvpn-generate-keys \
+                 openvpn-server@server openvpn-server@server-tcp

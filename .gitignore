@@ -1,4 +1,7 @@
-image/mkosi.cache/*
-image/mkosi.output/*
+env/
+*/mkosi.cache/*
+*/mkosi.output/*
+*/mkosi.tools/
+mkosi.tools.manifest
 
 !.gitkeep

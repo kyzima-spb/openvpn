@@ -1,8 +1,20 @@
-name: Build the test systemd-nspawn image
+name: Build and Deploy image
 
 on:
   push:
-    branches: ["master"]
+    branches:
+      - master
+      - dev-master
+    paths:
+      - image
+      - .github/workflows/build-image.yml
+  release:
+    types: 
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-nspawn:
@@ -10,25 +22,44 @@ jobs:
     steps:
       -
         name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
       -
         name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
+            debian-archive-keyring \
             debootstrap \
             python3 \
             systemd-container
-          sudo pip3 install https://github.com/systemd/mkosi/archive/refs/tags/v14.zip
+          sudo pip3 install https://github.com/systemd/mkosi/archive/refs/tags/v26.zip
       -
         name: Import GPG key
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
       -
-        name: Build Test Image
+        name: Build Image
         working-directory: ./image
-        run: sudo -E mkosi build .
+        run: |
+          sudo -E mkosi build \
+            --output openvpn.debian.trixie \
+            --sign=1 \
+            --key="62CD962F89DDC0CD"
       -
         name: Upload artifact
-        uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
         with:
-          path: ./image/mkosi.output/debian~*
+          path: |
+            ./image/mkosi.output/openvpn.*.tar.xz
+            ./image/mkosi.output/openvpn.*.SHA*
+      -
+        name: Deploy release
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            ./mkosi.output/debian~trixie/openvpn.tar.xz \
+            ./mkosi.output/debian~trixie/openvpn.tar.xz.manifest \
+            ./mkosi.output/debian~trixie/SHA256SUMS \
+            ./mkosi.output/debian~trixie/SHA256SUMS.gpg

@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
-
-# Copy the Easy-RSA utility
+echo >&2 "=> Copy the Easy-RSA utility"
 cp -r /usr/share/easy-rsa /etc/
 chmod 700 /etc/easy-rsa
 
-# Create a directory to store user configurations
+echo >&2 "=> Create a directory to store user configurations"
 mkdir -p /etc/openvpn/server/ccd
-
-# Clean package cache and remove the lists
-apt clean
-rm /var/lib/apt/lists/* || true
 
 systemctl enable systemd-networkd \
                  openvpn-generate-keys \
