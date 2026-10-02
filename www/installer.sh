@@ -46,7 +46,7 @@ restore() {
 
 
 install_requirements() {
-  local public_key="$1"
+	local public_key="$1"
 
 	echo -n >&2 'Updating the package index...'
 	apt-get update -qq
@@ -54,31 +54,31 @@ install_requirements() {
 
 	if ! command -v machinectl > /dev/null
 	then
-	  echo -n >&2 'Installing the systemd-container package...'
-		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y systemd-container
+		echo -n >&2 'Installing the systemd-container package...'
+		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y systemd-container > /dev/null
 		echo >&2 '[OK]'
 	fi
 
 	if ! command -v gpg > /dev/null
 	then
-	  echo -n >&2 'Installing the gnupg package...'
-		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y gnupg
+		echo -n >&2 'Installing the gnupg package...'
+		DEBIAN_FRONTEND=noninteractive apt-get install -qq -y gnupg > /dev/null
 		echo >&2 '[OK]'
 	fi
 
 	gpg -k > /dev/null
-  gpg \
-    --no-default-keyring \
-    --keyring /etc/systemd/import-pubring.gpg \
-    --keyserver hkps://keyserver.ubuntu.com \
-    --receive-keys "$public_key"
+	gpg \
+    	--no-default-keyring \
+    	--keyring /etc/systemd/import-pubring.gpg \
+    	--keyserver hkps://keyserver.ubuntu.com \
+    	--receive-keys "$public_key"
 
 	systemctl enable --now systemd-networkd.service
 }
 
 
 install() {
-  declare -n kwargs=$1
+	declare -n kwargs=$1
 	local name="${kwargs[name]}"
 	local image="${kwargs[image]:-https://github.com/kyzima-spb/openvpn/releases/download/v1.0/openvpn.tar.xz}"
 	local port="${kwargs[port]:-$(get_free_port)}"
